@@ -18,8 +18,23 @@ ws.on('connection', function (clientWs) {
   clientWs.on('message', function (message) {
     console.log('Received message:', message);
 
-    // Echo back the received message
-    clientWs.send(`Echo: ${message}`);
+    // Parse the message as JSON
+    let parsedMessage;
+    try {
+      parsedMessage = JSON.parse(message);
+    } catch (error) {
+      console.error('Error parsing message:', error);
+      return;
+    }
+
+    // Check the message type
+    switch (parsedMessage.type) {
+      case 'touch':
+        handleTouch(parsedMessage.data);
+        break;
+      default:
+        console.log('Unknown message type:', parsedMessage.type);
+    }
   });
 
   // Send initial screen capture when client connects
@@ -62,4 +77,17 @@ function captureScreenAndSendFrames(clientWs) {
       console.error('Screenshot failed:', error);
     })
     .finally(()=>setTimeout(captureScreenAndSendFrames.bind(null, clientWs), 10));
+}
+
+// Function to handle touch events
+function handleTouch(touchData) {
+  const { x, y } = touchData;
+  
+  // Move the mouse to the specified coordinates
+  robot.moveMouse(x, y);
+
+  // Perform a mouse click
+  robot.mouseClick();
+  
+  console.log(`Emulated click at (${x}, ${y})`);
 }
