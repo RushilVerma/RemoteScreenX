@@ -1,0 +1,27 @@
+{
+  "name": "remotescreenx-pc",
+  "version": "1.0.0",
+  "description": "PC Client for Remote Screen X",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "remote",
+    "screen",
+    "websocket"
+  ],
+  "author": "rushil verma",
+  "license": "ISC",
+  "dependencies": {
+    "canvas": "^2.11.2",
+    "electron": "^30.0.1",
+    "screenshot-desktop": "^1.15.0",
+    "ws": "^8.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "@types/ws": "^8.5.10"
+  }
+}
