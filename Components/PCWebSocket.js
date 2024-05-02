@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, Button, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, Button, TextInput, Pressable } from 'react-native';
 import { PORT, SERVER_IP } from '../private/server_settings.json'
 import { WebView } from 'react-native-webview';
-import { Keyboard } from 'react-native';
 
 const PCWebSocket = () => {
   const [socket, setSocket] = useState(null);
   const [serverIP, setServerIP] = useState(SERVER_IP); // Default server IP address
   const [connecting, setConnecting] = useState(false);
   const [receivedImage, setReceivedImage] = useState('');
-  const [boxColor, setBoxColor] = useState('red'); // Initial color for the box
-  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 }); // Initial cursor position
 
   const handleConnect = () => {
     console.log("Connecting .... ")
@@ -42,7 +39,6 @@ const PCWebSocket = () => {
         default:
           console.log('Unknown message type:', messageType);
       }
-
     };
 
     ws.onerror = (error) => {
@@ -64,14 +60,16 @@ const PCWebSocket = () => {
         type: 'text',
         data: 'Hello from React Native Android!',
       };
-      socket.send(JSON.stringify(message));
+      if (socket) {
+        socket.send(JSON.stringify(message));
+      }
     }
   };
 
-  const sendTouch = (type) => {
+  const sendTouchEvent = (type, event) => {
     const touchData = {
       type: 'touch',
-      data: type,
+      data: { type, event },
     };
     if (socket) {
       socket.send(JSON.stringify(touchData));
@@ -101,15 +99,35 @@ const PCWebSocket = () => {
         </View>
         <View style={styles.arrowContainer}>
           <View style={styles.row}>
-            <TouchableOpacity onPress={() => sendTouch('up')} style={[styles.arrowButton, styles.upButton]} />
+            <Pressable
+              onPressIn={(e) => sendTouchEvent('up', 'press')}
+              onPressOut={(e) => sendTouchEvent('up', 'release')}
+              style={[styles.arrowButton, styles.upButton]}
+            />
           </View>
           <View style={styles.row}>
-            <TouchableOpacity onPress={() => sendTouch('left')} style={[styles.arrowButton, styles.leftButton]} />
-            <TouchableOpacity onPress={() => sendTouch('click')} style={[styles.centerButton, styles.clickButton]} />
-            <TouchableOpacity onPress={() => sendTouch('right')} style={[styles.arrowButton, styles.rightButton]} />
+            <Pressable
+              onPressIn={(e) => sendTouchEvent('left', 'press')}
+              onPressOut={(e) => sendTouchEvent('left', 'release')}
+              style={[styles.arrowButton, styles.leftButton]}
+            />
+            <Pressable
+              onPressIn={(e) => sendTouchEvent('click', 'press')}
+              onPressOut={(e) => sendTouchEvent('click', 'release')}
+              style={[styles.centerButton, styles.clickButton]}
+            />
+            <Pressable
+              onPressIn={(e) => sendTouchEvent('right', 'press')}
+              onPressOut={(e) => sendTouchEvent('right', 'release')}
+              style={[styles.arrowButton, styles.rightButton]}
+            />
           </View>
           <View style={styles.row}>
-            <TouchableOpacity onPress={() => sendTouch('down')} style={[styles.arrowButton, styles.downButton]} />
+            <Pressable
+              onPressIn={(e) => sendTouchEvent('down', 'press')}
+              onPressOut={(e) => sendTouchEvent('down', 'release')}
+              style={[styles.arrowButton, styles.downButton]}
+            />
           </View>
         </View>
 

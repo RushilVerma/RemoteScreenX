@@ -94,39 +94,52 @@ function captureScreenAndSendFrames(clientWs) {
     .finally(() => setTimeout(captureScreenAndSendFrames.bind(null, clientWs), 10));
 }
 
+function calChange(touchData_type, newX, newY) {
+  switch (touchData_type) {
+    case 'left':
+      newX -= 5;
+      break;
+    case 'right':
+      newX += 5;
+      break;
+    case 'up':
+      newY -= 5;
+      break;
+    case 'down':
+      newY += 5;
+      break;
+    default:
+      console.log('Unknown direction:', touchData.type);
+      return;
+  }
+  return [newX, newY]
+}
+let moveMouseInterval;
+let newX, newY; // Declare newX and newY outside the try block
+
 // Function to handle touch events
 function handleTouch(touchData) {
-  console.log(touchData)
+  console.log(touchData);
   try {
+    if (touchData.event === 'press') {
 
-    if (touchData == 'click') {
-      // Perform a mouse click
-      robot.mouseClick();
-    }
-    else {
-      let newX = robot.getMousePos().x;
-      let newY = robot.getMousePos().y;
-      switch (touchData) {
-        case 'left':
-          newX -= 5;
-          break;
-        case 'right':
-          newX += 5;
-          break;
-        case 'up':
-          newY -= 5;
-          break;
-        case 'down':
-          newY += 5;
-          break;
-        default:
-          console.log('Unknown direction:', direction);
-          return;
+      if (touchData.type === 'click') {
+        // Perform a mouse click
+        moveMouseInterval = setInterval(() => {
+          robot.mouseClick()
+        }, 100);
+      } else {
+        moveMouseInterval = setInterval(() => {
+          newX = robot.getMousePos().x; // Assign values to newX and newY
+          newY = robot.getMousePos().y;
+          [newX, newY] = calChange(touchData.type, newX, newY)
+          // Move the mouse to the new coordinates
+          robot.moveMouse(newX, newY);
+        }, 10);
       }
-      // Move the mouse to the new coordinates
-      robot.moveMouse(newX, newY);
+    } else if (touchData.event === 'release') {
+      clearInterval(moveMouseInterval);
     }
-    console.log(`Emulated click at (${newX}, ${newY})`);
   } catch (error) {
     console.error('Error handling touch:', error);
   }
