@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Text, Button, TextInput, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, Text, Button, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { PORT, SERVER_IP } from '../private/server_settings.json'
 import { WebView } from 'react-native-webview';
+import { Keyboard } from 'react-native';
 
 const PCWebSocket = () => {
   const [socket, setSocket] = useState(null);
   const [serverIP, setServerIP] = useState(SERVER_IP); // Default server IP address
   const [connecting, setConnecting] = useState(false);
   const [receivedImage, setReceivedImage] = useState('');
+  const [boxColor, setBoxColor] = useState('red'); // Initial color for the box
+  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 }); // Initial cursor position
 
   const handleConnect = () => {
     console.log("Connecting .... ")
@@ -22,10 +25,11 @@ const PCWebSocket = () => {
     };
 
     ws.onmessage = (e) => {
+      // console.log('Received message:', e.data);
       const data = JSON.parse(e.data);
       const messageType = data.type;
       const messageData = data.data;
-
+      if (messageType !== 'image') console.log(`Message Ayo... : ${data}`);
       switch (messageType) {
         case 'image':
           const decodedImage = `data:image/png;base64,${messageData}`;
@@ -38,6 +42,7 @@ const PCWebSocket = () => {
         default:
           console.log('Unknown message type:', messageType);
       }
+
     };
 
     ws.onerror = (error) => {
@@ -52,19 +57,6 @@ const PCWebSocket = () => {
     };
   };
 
-  const handleTouch = (event) => {
-    const { nativeEvent } = event;
-    const { locationX, locationY } = nativeEvent;
-    const touchData = {
-      type: 'touch',
-      data: { x: locationX, y: locationY }
-    };
-
-    if (socket) {
-      socket.send(JSON.stringify(touchData));
-    }
-  };
-
   const sendMessage = () => {
     if (socket) {
       // Example: Sending a text message
@@ -76,9 +68,19 @@ const PCWebSocket = () => {
     }
   };
 
+  const sendTouch = (type) => {
+    const touchData = {
+      type: 'touch',
+      data: type,
+    };
+    if (socket) {
+      socket.send(JSON.stringify(touchData));
+    }
+  };
+
   return (
-    <View>
-      <View style={styles.container}>
+    <View style={styles.container}>
+      <View style={styles.webViewContainer}>
         {receivedImage ? (
           <WebView
             source={{ html: `<img src="${receivedImage}" style="width: 100%; height: 100%;" />` }}
@@ -87,36 +89,99 @@ const PCWebSocket = () => {
           />
         ) : null}
       </View>
-      <TouchableOpacity onPress={handleTouch} style={styles.touchArea}>
-        <Text style={styles.touchText}>Touch Here</Text>
-      </TouchableOpacity>
-      <TextInput
-        style={{ height: 40, borderColor: 'gray', borderWidth: 1, marginBottom: 10 }}
-        onChangeText={text => setServerIP(text)}
-        value={serverIP}
-      />
-      <Button title={connecting ? "Connecting..." : "Connect"} onPress={handleConnect} disabled={connecting || socket !== null} />
-      <Button title="Send Message" onPress={sendMessage} disabled={!socket} />
+      <View style={styles.rightContainer}>
+        <TextInput
+          style={styles.input}
+          onChangeText={text => setServerIP(text)}
+          value={serverIP}
+        />
+        <View style={styles.buttonContainer}>
+          <Button title={connecting ? "Connecting..." : "Connect"} onPress={handleConnect} disabled={connecting || socket !== null} />
+          <Button title="Send Message" onPress={sendMessage} disabled={!socket} />
+        </View>
+        <View style={styles.arrowContainer}>
+          <View style={styles.row}>
+            <TouchableOpacity onPress={() => sendTouch('up')} style={[styles.arrowButton, styles.upButton]} />
+          </View>
+          <View style={styles.row}>
+            <TouchableOpacity onPress={() => sendTouch('left')} style={[styles.arrowButton, styles.leftButton]} />
+            <TouchableOpacity onPress={() => sendTouch('click')} style={[styles.centerButton, styles.clickButton]} />
+            <TouchableOpacity onPress={() => sendTouch('right')} style={[styles.arrowButton, styles.rightButton]} />
+          </View>
+          <View style={styles.row}>
+            <TouchableOpacity onPress={() => sendTouch('down')} style={[styles.arrowButton, styles.downButton]} />
+          </View>
+        </View>
+
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    width: 500,
-    height: 250,
+    flex: 1,
+    flexDirection: 'row', // Align items horizontally
+    justifyContent: 'space-between', // Add space between items
+    alignItems: 'center', // Center items vertically
+    padding: 10,
   },
-  touchArea: {
-    width: 200,
-    height: 200,
-    backgroundColor: 'lightblue',
+  webViewContainer: {
+    flex: 1,
+    marginRight: 10, // Add margin to separate from right container
+  },
+  rightContainer: {
+    flex: 0.27,
+    justifyContent: 'center',
+    alignItems: 'flex-start', // Align items to the start (left)
+  },
+  input: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    marginBottom: 10,
+    width: '100%', // Take full width of the container
+  },
+  buttonContainer: {
+    justifyContent: 'space-around',
+    width: '100%', // Take full width of the container
+  },
+  arrowContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  touchText: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  row: {
+    flexDirection: 'row',
+  },
+  arrowButton: {
+    width: 50,
+    height: 50,
+    // margin: 5,
+    borderWidth: 1,
+    borderRadius: 5,
+  },
+  upButton: {
+    backgroundColor: 'green',
+  },
+  downButton: {
+    backgroundColor: 'red',
+  },
+  leftButton: {
+    backgroundColor: 'blue',
+  },
+  rightButton: {
+    backgroundColor: 'yellow',
+  },
+  centerButton: {
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'purple',
+  },
+  clickButton: {
+    borderRadius: 50,
   },
 });
-
 export default PCWebSocket;
