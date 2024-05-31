@@ -44,7 +44,7 @@ const PCWebSocket = () => {
     };
 
     ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      console.log('WebSocket error:', error);
       setConnecting(false);
     };
 
@@ -87,6 +87,7 @@ const PCWebSocket = () => {
             <body style="margin:0;padding:0;">
               <div style="position:relative;">
                 <img src="${receivedImage}" style="width: 100%; height: 100%;" />
+                <div style="position:absolute; top:${cursorPos.y * 100}%; left:${cursorPos.x * 100}%; width:10px; height:10px; background-color:red; border-radius:50%;"></div>
               </div>
             </body>
               ` 
@@ -139,7 +140,6 @@ const PCWebSocket = () => {
             />
           </View>
         </View>
-
       </View>
     </View>
   );

@@ -2,7 +2,8 @@ const WebSocketServer = require('ws').WebSocketServer;
 const { PORT, SERVER_IP } = require('../private/server_settings.json');
 const screenshot = require('screenshot-desktop');
 const robot = require("robotjs");
-
+const sharp = require('sharp');
+const sensitivity = 2;
 const ws = new WebSocketServer({ port: PORT, host: SERVER_IP }); // Specify the IP address to listen on
 
 ws.on('headers', (headers, request) => {
@@ -13,14 +14,14 @@ ws.on('connection', function (clientWs) {
   console.log('WebSocket connected');
 
   clientWs.on('message', function (message) {
-    console.log('Received message:', message);
+    // console.log('Received message:', message);
 
     // Parse the message as JSON
     let parsedMessage;
     try {
       parsedMessage = JSON.parse(message);
     } catch (error) {
-      console.error('Error parsing message:', error);
+      console.log('Error parsing message:', error);
       return;
     }
 
@@ -56,7 +57,7 @@ ws.on('listening', function () {
   if (address) {
     console.log(`WebSocket server running on ws://${address.address}:${address.port}`);
   } else {
-    console.error('Failed to get server address');
+    console.log('Failed to get server address');
   }
 });
 
@@ -66,41 +67,58 @@ function captureScreenAndSendFrames(clientWs) {
     console.log('clientWs is not defined');
     return;
   }
-
-  screenshot({ format: 'png' })
-    .then((img) => {
-      const imgData = Buffer.from(img).toString('base64');
-      const cursorPos = robot.getMousePos();
-      const jsonData = {
-        "type": 'image',
-        "data": imgData,
-        "cursor": cursorPos
-      };
-      // Send screen capture frame to the connected client
-      if (clientWs.readyState === 1) {
-        clientWs.send(JSON.stringify(jsonData));
-      }
-    })
-    .catch((error) => {
-      console.error('Screenshot failed:', error);
-    })
-    .finally(() => setTimeout(captureScreenAndSendFrames.bind(null, clientWs), 10));
+  screenshot({ format: 'jpg' })
+  .then((img) => {
+    // Resize the image using sharp
+    sharp(img)
+      .resize({ width: 800 }) // Adjust the width as needed
+      .toBuffer()
+      .then((resizedImg) => {
+        const imgData = resizedImg.toString('base64');
+        let cursorPos = robot.getMousePos();
+        cursorPos = {
+          x: cursorPos.x / robot.getScreenSize().width,
+          y: cursorPos.y / robot.getScreenSize().height,
+        };
+        cursorPos = {
+          x: cursorPos.x < 1 ? cursorPos.x : 1,
+          y: cursorPos.y < 1 ? cursorPos.y : 1,
+        };
+        // console.log("Sending Cursor : "+cursorPos.x+","+cursorPos.y)
+        const jsonData = {
+          type: 'image',
+          data: imgData,
+          cursor: cursorPos,
+        };
+        // Send screen capture frame to the connected client
+        if (clientWs.readyState === 1) {
+          clientWs.send(JSON.stringify(jsonData));
+        }
+      })
+      .catch((err) => {
+        console.error('Error resizing image:', err);
+      });
+  })
+  .catch((error) => {
+    console.log('Screenshot failed:', error);
+  })
+  .finally(() => setTimeout(captureScreenAndSendFrames.bind(null, clientWs), 10));
 }
 
 // Function to calculate new mouse position based on touch type
 function calChange(touchData_type, newX, newY) {
   switch (touchData_type) {
     case 'left':
-      newX -= 5;
+      newX -= sensitivity;
       break;
     case 'right':
-      newX += 5;
+      newX += sensitivity;
       break;
     case 'up':
-      newY -= 5;
+      newY -= sensitivity;
       break;
     case 'down':
-      newY += 5;
+      newY += sensitivity;
       break;
     default:
       console.log('Unknown direction:', touchData_type);
@@ -113,7 +131,7 @@ let moveMouseInterval;
 
 // Function to handle touch events
 function handleTouch(touchData) {
-  console.log(touchData);
+  // console.log(touchData);
   try {
     if (touchData.event === 'press') {
       if (touchData.type === 'click') {
@@ -133,6 +151,6 @@ function handleTouch(touchData) {
       clearInterval(moveMouseInterval);
     }
   } catch (error) {
-    console.error('Error handling touch:', error);
+    console.log('Error handling touch:', error);
   }
 }
