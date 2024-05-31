@@ -2,8 +2,7 @@ const WebSocketServer = require('ws').WebSocketServer;
 const { PORT, SERVER_IP } = require('../private/server_settings.json');
 const screenshot = require('screenshot-desktop');
 const robot = require("robotjs");
-const sharp = require('sharp');
-const sensitivity = 2;
+const sensitivity = 3;
 const ws = new WebSocketServer({ port: PORT, host: SERVER_IP }); // Specify the IP address to listen on
 
 ws.on('headers', (headers, request) => {
@@ -67,38 +66,24 @@ function captureScreenAndSendFrames(clientWs) {
     console.log('clientWs is not defined');
     return;
   }
-  screenshot({ format: 'jpg' })
-  .then((img) => {
-    // Resize the image using sharp
-    sharp(img)
-      .resize({ width: 800 }) // Adjust the width as needed
-      .toBuffer()
-      .then((resizedImg) => {
-        const imgData = resizedImg.toString('base64');
-        let cursorPos = robot.getMousePos();
-        cursorPos = {
-          x: cursorPos.x / robot.getScreenSize().width,
-          y: cursorPos.y / robot.getScreenSize().height,
-        };
-        cursorPos = {
-          x: cursorPos.x < 1 ? cursorPos.x : 1,
-          y: cursorPos.y < 1 ? cursorPos.y : 1,
-        };
-        // console.log("Sending Cursor : "+cursorPos.x+","+cursorPos.y)
-        const jsonData = {
-          type: 'image',
-          data: imgData,
-          cursor: cursorPos,
-        };
-        // Send screen capture frame to the connected client
-        if (clientWs.readyState === 1) {
-          clientWs.send(JSON.stringify(jsonData));
-        }
-      })
-      .catch((err) => {
-        console.error('Error resizing image:', err);
-      });
-  })
+
+  screenshot({ format: 'jpg'})
+    .then((img) => {
+      const imgData = Buffer.from(img).toString('base64');
+      let cursorPos = robot.getMousePos();
+      cursorPos = {x : cursorPos.x/robot.getScreenSize().width, y:cursorPos.y/robot.getScreenSize().height}
+      cursorPos = {x : cursorPos.x < 1?cursorPos.x:1, y:cursorPos.y< 1?cursorPos.y:1}
+      // console.log("Sending Cursor : "+cursorPos.x+","+cursorPos.y)
+      const jsonData = {
+        "type": 'image',
+        "data": imgData,
+        "cursor": cursorPos
+      };
+      // Send screen capture frame to the connected client
+      if (clientWs.readyState === 1) {
+        clientWs.send(JSON.stringify(jsonData));
+      }
+    })
   .catch((error) => {
     console.log('Screenshot failed:', error);
   })
