@@ -1,9 +1,37 @@
 const WebSocketServer = require('ws').WebSocketServer;
-const { PORT, SERVER_IP } = require('../private/server_settings.json');
 const screenshot = require('screenshot-desktop');
 const robot = require("robotjs");
+const os = require('os');
 const sensitivity = 3;
-const ws = new WebSocketServer({ port: PORT, host: SERVER_IP }); // Specify the IP address to listen on
+
+let PORT, serverIP, SERVER_MODE;
+try{
+  ({ PORT, serverIP, SERVER_MODE } = require('../private/server_settings.json'));
+}
+catch(err){
+  console.log("Config File not present at : ../private/server_settings.json !! NP XD")
+  console.log("Server running in auto mode...");
+  SERVER_MODE = "auto"
+}
+
+if (SERVER_MODE === 'auto') {
+  const networkInterfaces = os.networkInterfaces();
+  const wifiInterface = networkInterfaces['Wi-Fi']; // Adjust 'Wi-Fi' to match your actual Wi-Fi interface name
+
+  if (wifiInterface && Array.isArray(wifiInterface)) {
+    // Find the IPv4 address of the Wi-Fi interface that is not localhost
+    const wifiAddress = wifiInterface.find(({ family, address }) => {
+      return family === 'IPv4' && address !== '127.0.0.1';
+    });
+
+    if (wifiAddress) {
+      serverIP = wifiAddress.address;
+      PORT = 8080
+    }
+  }
+}
+
+const ws = new WebSocketServer({ port: PORT, host: serverIP }); // Specify the IP address to listen on
 
 ws.on('headers', (headers, request) => {
   headers.push('Access-Control-Allow-Origin: *'); // Update this with your specific origin if needed

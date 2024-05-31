@@ -1,4 +1,21 @@
+# Remote Screen X PC Client
+A client application for Remote Screen X, enabling remote screen sharing and control over WebSocket connections. 
+Built with Node.js, WebSocket, RobotJS, and other technologies.
 ## Start your Application
+### Configuration
+- Install Desktop Development with C++ in Visual Studio Installer
+- [Optional] Add `../private/server_settings.json` file 
+```
+{
+    "PORT": 8080 ,
+    "SERVER_IP": "192.168.1.5",
+    "SERVER_MODE":"auto"
+}
+```
+### For PC-Client[./RemoteScreenX-PC/]
+```bash
+npm run pc
+```
 ### For Android
 
 ```bash

@@ -2,10 +2,11 @@
   "name": "remotescreenx-pc",
   "version": "1.0.0",
   "description": "PC Client for Remote Screen X",
-  "main": "index.js",
+  "main": "server.js",
+  "bin": "server.js",
   "scripts": {
-    "start": "nodemon ./server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node ./server.js",
+    "test": "nodemon ./server.js"
   },
   "keywords": [
     "remote",

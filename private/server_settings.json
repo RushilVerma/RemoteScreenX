@@ -1,4 +1,5 @@
 {
     "PORT": 8080 ,
-    "SERVER_IP": "192.168.1.5"
+    "SERVER_IP": "192.168.1.5",
+    "SERVER_MODE":"auto"
 }
