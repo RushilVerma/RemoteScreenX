@@ -8,6 +8,7 @@ const PCWebSocket = () => {
   const [serverIP, setServerIP] = useState(SERVER_IP); // Default server IP address
   const [connecting, setConnecting] = useState(false);
   const [receivedImage, setReceivedImage] = useState('');
+  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
 
   const handleConnect = () => {
     console.log("Connecting .... ")
@@ -31,6 +32,7 @@ const PCWebSocket = () => {
         case 'image':
           const decodedImage = `data:image/png;base64,${messageData}`;
           setReceivedImage(decodedImage);
+          setCursorPos(data.cursor); // Set the cursor position
           break;
         case 'text':
           console.log('Received text message:', messageData);
@@ -81,7 +83,14 @@ const PCWebSocket = () => {
       <View style={styles.webViewContainer}>
         {receivedImage ? (
           <WebView
-            source={{ html: `<img src="${receivedImage}" style="width: 100%; height: 100%;" />` }}
+            source={{ html: `
+            <body style="margin:0;padding:0;">
+              <div style="position:relative;">
+                <img src="${receivedImage}" style="width: 100%; height: 100%;" />
+              </div>
+            </body>
+              ` 
+            }}
             javaScriptEnabled={true}
             domStorageEnabled={true}
           />

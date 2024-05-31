@@ -1,17 +1,9 @@
 const WebSocketServer = require('ws').WebSocketServer;
 const { PORT, SERVER_IP } = require('../private/server_settings.json');
-// const { createCanvas } = require('canvas');
 const screenshot = require('screenshot-desktop');
-var robot = require("robotjs");
+const robot = require("robotjs");
 
 const ws = new WebSocketServer({ port: PORT, host: SERVER_IP }); // Specify the IP address to listen on
-
-// const SCREEN_WIDTH = 1920; // Width of the screen to capture
-// const SCREEN_HEIGHT = 1080; // Height of the screen to capture
-
-// // Create a canvas to draw screen captures
-// const canvas = createCanvas(SCREEN_WIDTH, SCREEN_HEIGHT);
-// const ctx = canvas.getContext('2d');
 
 ws.on('headers', (headers, request) => {
   headers.push('Access-Control-Allow-Origin: *'); // Update this with your specific origin if needed
@@ -41,7 +33,7 @@ ws.on('connection', function (clientWs) {
         const sendData = {
           'type': 'text',
           'data': message
-        }
+        };
         clientWs.send(JSON.stringify(sendData));
         break;
       default:
@@ -50,7 +42,7 @@ ws.on('connection', function (clientWs) {
   });
 
   // Send initial screen capture when client connects
-  captureScreenAndSendFrames.bind(null, clientWs)();
+  captureScreenAndSendFrames(clientWs);
 
   clientWs.on('close', function () {
     console.log('WebSocket disconnected');
@@ -62,7 +54,7 @@ ws.on('listening', function () {
   const address = server.address(); // Get the address of the HTTP server
 
   if (address) {
-    console.log(`WebSocket server running on ws://${JSON.stringify(address)}:${address.port}`);
+    console.log(`WebSocket server running on ws://${address.address}:${address.port}`);
   } else {
     console.error('Failed to get server address');
   }
@@ -77,12 +69,13 @@ function captureScreenAndSendFrames(clientWs) {
 
   screenshot({ format: 'png' })
     .then((img) => {
-      // Draw captured screen image onto canvas
       const imgData = Buffer.from(img).toString('base64');
+      const cursorPos = robot.getMousePos();
       const jsonData = {
         "type": 'image',
-        "data": imgData
-      }
+        "data": imgData,
+        "cursor": cursorPos
+      };
       // Send screen capture frame to the connected client
       if (clientWs.readyState === 1) {
         clientWs.send(JSON.stringify(jsonData));
@@ -94,6 +87,7 @@ function captureScreenAndSendFrames(clientWs) {
     .finally(() => setTimeout(captureScreenAndSendFrames.bind(null, clientWs), 10));
 }
 
+// Function to calculate new mouse position based on touch type
 function calChange(touchData_type, newX, newY) {
   switch (touchData_type) {
     case 'left':
@@ -109,30 +103,28 @@ function calChange(touchData_type, newX, newY) {
       newY += 5;
       break;
     default:
-      console.log('Unknown direction:', touchData.type);
-      return;
+      console.log('Unknown direction:', touchData_type);
+      return [newX, newY];
   }
-  return [newX, newY]
+  return [newX, newY];
 }
+
 let moveMouseInterval;
-let newX, newY; // Declare newX and newY outside the try block
 
 // Function to handle touch events
 function handleTouch(touchData) {
   console.log(touchData);
   try {
     if (touchData.event === 'press') {
-
       if (touchData.type === 'click') {
         // Perform a mouse click
         moveMouseInterval = setInterval(() => {
-          robot.mouseClick()
+          robot.mouseClick();
         }, 100);
       } else {
         moveMouseInterval = setInterval(() => {
-          newX = robot.getMousePos().x; // Assign values to newX and newY
-          newY = robot.getMousePos().y;
-          [newX, newY] = calChange(touchData.type, newX, newY)
+          let { x: newX, y: newY } = robot.getMousePos();
+          [newX, newY] = calChange(touchData.type, newX, newY);
           // Move the mouse to the new coordinates
           robot.moveMouse(newX, newY);
         }, 10);

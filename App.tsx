@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet, Button } from 'react-native';
-import PCWebSocket from './Components/PCWebSocket';
+import PCWebSocket from './components/PCWebSocket';
 import Orientation from 'react-native-orientation-locker';
 
 const App = () => {
